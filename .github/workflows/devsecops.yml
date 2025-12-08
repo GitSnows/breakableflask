@@ -9,7 +9,7 @@ jobs:
           docker run --rm \
           -v "$PWD":/src \
           -v "$HOME/.cache/trivy":/root/.cache/ \
-          aquasec/trivy:latest fs /src/requirements.txt \
+          aquasec/trivy:latest fs /src/breakableflask/requirements.txt \
             --format json \
             --severity HIGH,CRITICAL \
           | jq -r '
