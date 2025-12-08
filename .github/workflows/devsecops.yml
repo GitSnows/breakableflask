@@ -4,21 +4,25 @@ jobs:
   Dependances:
     runs-on: ubuntu-latest
     steps:
+      - name: Installer Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.68.3_Linux-64bit.deb
+          sudo dpkg -i trivy_0.68.3_Linux-64bit.deb
+
       - name: Scan Trivy du fichier requirements.txt (HIGH + CRITICAL)
         run: |
-          docker run --rm \
-          -v "$PWD":/src \
-          -v "$HOME/.cache/trivy":/root/.cache/ \
-          aquasec/trivy:latest fs /src/breakableflask/requirements.txt \
+          trivy fs breakableflask/requirements.txt \
             --format json \
             --severity HIGH,CRITICAL \
           | jq -r '
-            ["TARGET","PACKAGE","INSTALLED","VULN","SEVERITY"],
-            (.Results[]? as $r 
-              | $r.Vulnerabilities[]? 
-              | [$r.Target, .PkgName, .InstalledVersion, .VulnerabilityID, .Severity]
-            )
-            | @tsv' \
+              ["TARGET","PACKAGE","INSTALLED","VULN","SEVERITY"],
+              (.Results[]? as $r 
+                | $r.Vulnerabilities[]? 
+                | [$r.Target, .PkgName, .InstalledVersion, .VulnerabilityID, .Severity]
+              )
+              | @tsv' \
           | column -t -s $'\t'
   Dockerfile:
     runs-on: ubuntu-latest
