@@ -11,7 +11,7 @@ jobs:
 
       - name: Scan Trivy du fichier requirements.txt (HIGH + CRITICAL)
         run: |
-          ./bin/trivy fs "$GITHUB_WORKSPACE/breakableflask/requirements.txt" \
+          ./bin/trivy fs "$GITHUB_WORKSPACE/requirements.txt" \
             --format json \
             --severity HIGH,CRITICAL \
           | jq -r '
