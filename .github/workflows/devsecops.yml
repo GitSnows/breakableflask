@@ -4,19 +4,19 @@ jobs:
   Dependances:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code 🛎️
+      - name: Checkout Code
         uses: actions/checkout@v4 # <-- REQUIRED STEP: Downloads the repository contents
 
-      - name: Installer Trivy 📦
+      - name: Installer Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh
 
-      - name: Scan Trivy du fichier requirements.txt (HIGH + CRITICAL) 🧪
+      - name: Scan Trivy du fichier requirements.txt (HIGH + CRITICAL)
         run: |
           # The file is now guaranteed to be in $GITHUB_WORKSPACE/requirements.txt
           ./bin/trivy fs "$GITHUB_WORKSPACE/requirements.txt" \
             --format json \
-            --severity HIGH,CRITICAL \
+            --severity LOW,MEDIUM,HIGH,CRITICAL \
           | jq -r '
               ["TARGET","PACKAGE","INSTALLED","VULN","SEVERITY"],
               (.Results[]? as $r 
