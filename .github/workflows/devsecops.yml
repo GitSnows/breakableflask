@@ -30,9 +30,31 @@ jobs:
     runs-on: ubuntu-latest
     needs: Dependances
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4 # Doit être répété pour chaque job
+
+      - name: Installer Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh
+          
       - name: Test Dockerfile
         run: |
-          echo "ecrire ici le scrypt de contrôle du Dockerfile"
+          echo "### 1. SCAN DE CONFIGURATION DU DOCKERFILE (Mauvaises Pratiques) ###"
+          # Scanne le Dockerfile pour les erreurs de configuration et les mauvaises pratiques
+          ./bin/trivy config "$GITHUB_WORKSPACE/Dockerfile" \
+            --severity HIGH,CRITICAL \
+            --format table
+
+          echo "### 2. BUILD DE L'IMAGE DOCKER ###"
+          # Construit l'image Docker pour le scan des vulnérabilités internes
+          docker build -t breakableflask:latest "$GITHUB_WORKSPACE"
+          
+          echo "### 3. SCAN DE VULNÉRABILITÉS DE L'IMAGE (OS et dépendances) ###"
+          # Scanne l'image construite pour les vulnérabilités du système d'exploitation et des paquets
+          ./bin/trivy image breakableflask:latest \
+            --severity HIGH,CRITICAL \
+            --format table
+        shell: /usr/bin/bash -e {0}
   Deploy:
     runs-on: ubuntu-latest
     needs: Dockerfile
