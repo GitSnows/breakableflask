@@ -1,19 +1,20 @@
 name: Automatisation des tests DevSecOps
 on: push
+
 jobs:
   Dependances:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4 # <-- REQUIRED STEP: Downloads the repository contents
+        uses: actions/checkout@v4
 
       - name: Installer Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh
 
-      - name: Scan Trivy du fichier requirements.txt (HIGH + CRITICAL)
+      - name: Scan Trivy du fichier requirements.txt
         run: |
-          # The file is now guaranteed to be in $GITHUB_WORKSPACE/requirements.txt
+          # AJOUT : "> report-dependances.txt" pour créer le fichier
           ./bin/trivy fs "$GITHUB_WORKSPACE/requirements.txt" \
             --format json \
             --severity LOW,MEDIUM,HIGH,CRITICAL \
@@ -24,19 +25,21 @@ jobs:
                 | [$r.Target, .PkgName, .InstalledVersion, .VulnerabilityID, .Severity]
               )
               | @tsv' \
-          | column -t -s $'\t'
+          | column -t -s $'\t' > report-dependances.txt
         shell: /usr/bin/bash -e {0}
+
       - name: Upload Rapport Dependances
         uses: actions/upload-artifact@v4
         with:
           name: rapport-dependances
           path: report-dependances.txt
+
   Dockerfile:
     runs-on: ubuntu-latest
     needs: Dependances
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4 # Doit être répété pour chaque job
+        uses: actions/checkout@v4
 
       - name: Installer Trivy
         run: |
@@ -44,34 +47,30 @@ jobs:
           
       - name: Test Dockerfile
         run: |
-          echo "### 1. SCAN DE CONFIGURATION DU DOCKERFILE (Mauvaises Pratiques) ###"
-          # Scanne le Dockerfile pour les erreurs de configuration et les mauvaises pratiques
+          echo "### 1. SCAN DE CONFIGURATION DU DOCKERFILE ###" > report-docker.txt
           ./bin/trivy config "$GITHUB_WORKSPACE/Dockerfile" \
             --severity HIGH,CRITICAL \
-            --format table
+            --format table >> report-docker.txt
 
-          echo "### 2. BUILD DE L'IMAGE DOCKER ###"
-          # Construit l'image Docker pour le scan des vulnérabilités internes
+          echo "### 2. BUILD DE L'IMAGE DOCKER ###" >> report-docker.txt
           docker build -t breakableflask:latest "$GITHUB_WORKSPACE"
           
-          echo "### 3. SCAN DE VULNÉRABILITÉS DE L'IMAGE (OS et dépendances) ###"
-          # Scanne l'image construite pour les vulnérabilités du système d'exploitation et des paquets
+          echo "### 3. SCAN DE VULNÉRABILITÉS DE L'IMAGE ###" >> report-docker.txt
           ./bin/trivy image breakableflask:latest \
             --severity HIGH,CRITICAL \
-            --format table
+            --format table >> report-docker.txt
         shell: /usr/bin/bash -e {0}
+
       - name: Upload Rapport Docker
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: rapport-docker
           path: report-docker.txt
+
   Deploy:
     runs-on: ubuntu-latest
     needs: Dockerfile
     steps:
       - name: Deploy
-        run: |
-          echo "Rien à faire ici. Votre application est prête à être déployée"
-
-
+        run: echo "Rien à faire ici. Votre application est prête à être déployée"
