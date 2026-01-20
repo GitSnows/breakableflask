@@ -26,6 +26,11 @@ jobs:
               | @tsv' \
           | column -t -s $'\t'
         shell: /usr/bin/bash -e {0}
+      - name: Upload Rapport Dependances
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-dependances
+          path: report-dependances.txt
   Dockerfile:
     runs-on: ubuntu-latest
     needs: Dependances
@@ -55,6 +60,12 @@ jobs:
             --severity HIGH,CRITICAL \
             --format table
         shell: /usr/bin/bash -e {0}
+      - name: Upload Rapport Docker
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-docker
+          path: report-docker.txt
   Deploy:
     runs-on: ubuntu-latest
     needs: Dockerfile
